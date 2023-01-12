@@ -102,7 +102,7 @@
             int type;
 
             do {
-                console = Input("Select payment type:\nCash (1)\nCard (2)");
+                console = Input("\nSelect payment type:\nCash (1)\nCard (2)");
                 parser = int.TryParse(console, out type);
 
             }while ((parser == false) || (type != 1 && type != 2));
@@ -168,7 +168,7 @@
             string cardType = "";
 
             do {
-                console = Input("Please enter your 16-digit card number: ");
+                console = Input("\nPlease enter your 16-digit card number: ");
                 parser = Int64.TryParse(console, out cardNo);
             } while (parser == false);
 
@@ -198,14 +198,19 @@
             bool parser = false;
             double numSum = 0;
             double numProduct = 0;
-            long aNum;
+            int aNum;
+            int[] card = new int[cardStr.Length];
             string productStr;
-            int finalNum = 0;
             bool isValidCard = false;
+            int finalNum;
 
             for (int i = 0; i < cardStr.Length; i++) {
+                aNum = (int)char.GetNumericValue(cardStr[i]);
+                card[i] = aNum;
 
+                numSum = numSum + card[i];
             }
+
             numProduct = numSum / 10;
             productStr = numProduct.ToString();
 

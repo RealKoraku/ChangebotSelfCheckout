@@ -27,11 +27,11 @@
 
             if (type == 1) {
                 change = InsertCash(total, cashDrawer, intake);
+                cashDrawer = DispenseChange(change, cashDrawer, intake);
             } else if (type == 2) {
                 InsertCard(total);
+                CashBack(total, cashDrawer);
             }
-
-            cashDrawer = DispenseChange(change, cashDrawer, intake);
 
         }//end main
 
@@ -178,12 +178,12 @@
                 cardType = "American Express";
             } else if (cardStr[0] == '4') {
                 cardType = "Visa";
-            } else if (cardStr[0] == '5') {
+            } else if (cardStr[0] == '5' || cardStr[0] == '2') {
                 cardType = "Mastercard";
             } else if (cardStr[0] == '6') {
                 cardType = "Discover";
             } else {
-                Console.WriteLine("Invalid card number.");
+                cardType = "Other/Unknown";
             }
 
             validCard = IsValidCard(cardStr);
@@ -195,7 +195,6 @@
 
         static bool IsValidCard(string cardStr) {
             string console;
-            bool parser = false;
             double numSum = 0;
             double numProduct = 0;
             int aNum;
@@ -212,15 +211,44 @@
             }
 
             numProduct = numSum / 10;
+            numProduct = numProduct + 0.1;
             productStr = numProduct.ToString();
 
-            parser = int.TryParse(productStr, out finalNum);
-
-            if(parser == true) {
-                isValidCard = true;
-            }
+            isValidCard = int.TryParse(productStr, out finalNum);
 
             return isValidCard;
+        }
+
+        static Currency[] CashBack(decimal total, Currency[] cashDrawer) {
+            string console;
+            bool parser;
+            bool parser2;
+            decimal withdrawal;
+            decimal drawerTotal;
+            int[] placehold = {0}; 
+
+            do {
+                console = Input("Would you like cash-back? (y/n)");
+            } while (console != "n" && console != "y");
+
+            if (console == "y") {
+                do {
+                    console = Input("Withdraw in intervals of 20.\n(min $20 / max $200)");
+                    parser = decimal.TryParse(console, out withdrawal);
+
+                    decimal divisor = withdrawal / 20;
+                    string divStr = divisor.ToString();
+
+                    parser = int.TryParse(divStr, out int numCheck);
+
+                } while (parser == false);
+                drawerTotal = CheckDrawer(cashDrawer);
+                
+                if (drawerTotal > withdrawal) {
+                    DispenseChange(withdrawal, cashDrawer, placehold);
+                }
+            }
+            return cashDrawer;
         }
 
         static Currency[] DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
@@ -256,7 +284,9 @@
                 }
                 Console.WriteLine($"\nDispensed total: {dispensed}");
 
-                cashDrawer = RefreshDrawer(cashDrawer, intake);
+                if (intake[0] > 0) {
+                    cashDrawer = RefreshDrawer(cashDrawer, intake);
+                }
                 drawerTotal = CheckDrawer(cashDrawer);
                 Console.WriteLine($"(New drawer) = {drawerTotal}");
             }

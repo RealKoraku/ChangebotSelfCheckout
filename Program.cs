@@ -1,4 +1,6 @@
-﻿namespace NewerKiosk {
+﻿using System.Transactions;
+
+namespace NewerKiosk {
     public struct Currency {
         public string type;
         public decimal value;
@@ -11,13 +13,14 @@
             decimal change = 0.00m;
             int type;
             string cardStr;
+            bool validCard;
 
-            Console.WriteLine("Welcome to Self-Checkout!\n");
+            Console.WriteLine("Welcome to Changebot! ©2023 NoHomoSapiens\n");
 
             Currency[] cashDrawer = InitializeDrawer();
             drawerTotal = CheckDrawer(cashDrawer);
 
-            int[] intake = new int[cashDrawer.Length]; 
+            int[] intake = new int[cashDrawer.Length];
 
             Console.WriteLine(drawerTotal);
 
@@ -31,7 +34,8 @@
                 cashDrawer = DispenseChange(change, cashDrawer, intake);
             } else if (type == 2) {
                 cardStr = InsertCard(total);
-                CashBack(total, cardStr, cashDrawer);
+                validCard = IsValidCard(cardStr);
+                CashBack(total, cardStr, validCard, cashDrawer);
             }
 
         }//end main
@@ -64,7 +68,7 @@
 
             return denom;
         }
-        
+
         static decimal ScanItems() {
             decimal itemPrice;
             decimal total = 0;
@@ -106,11 +110,11 @@
                 console = Input("\nSelect payment type:\nCash (1)\nCard (2)");
                 parser = int.TryParse(console, out type);
 
-            }while ((parser == false) || (type != 1 && type != 2));
+            } while ((parser == false) || (type != 1 && type != 2));
 
-        return type;
+            return type;
         }
-        
+
         static decimal InsertCash(decimal total, Currency[] cashDrawer, int[] intake) {
             string console;
             bool parser;
@@ -131,7 +135,7 @@
                 total = total - payment;
 
                 for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {
-                    if(payment == cashDrawer[drawer].value) {
+                    if (payment == cashDrawer[drawer].value) {
                         intake[drawer]++;
                     }
                 }
@@ -187,11 +191,11 @@
                 cardType = "Other/Unknown";
             }
 
-            validCard = IsValidCard(cardStr);
-
-            Console.WriteLine($"\nValid card: {validCard}");
-            
-            Console.WriteLine($"{cardType}\n");
+            //validCard = IsValidCard(cardStr);
+            //
+            //Console.WriteLine($"\nValid card: {validCard}");
+            //
+            //Console.WriteLine($"{cardType}\n");
 
             return cardStr;
         }
@@ -222,16 +226,17 @@
             return isValidCard;
         }
 
-        static Currency[] CashBack(decimal total, string cardStr, Currency[] cashDrawer) {
+        static Currency[] CashBack(decimal total, string cardStr, bool validCard, Currency[] cashDrawer) {
             string console;
             bool parser;
             bool parser2;
+            bool request = false;
             decimal amount;
             decimal withdrawal;
             decimal drawerTotal;
             string account_number = cardStr;
             string[] bankInfo;
-            int[] placehold = {0}; 
+            int[] placehold = { 0 };
 
             do {
                 console = Input("Would you like cash-back? (y/n)");
@@ -247,8 +252,26 @@
 
                     parser = int.TryParse(divStr, out int numCheck);
 
+                    request = true;
                 } while (parser == false);
+
                 drawerTotal = CheckDrawer(cashDrawer);
+
+                if (request && validCard == false) {
+
+                    Console.WriteLine("Invalid card; unable to complete transaction.");
+                    DisplayTotal(total);
+                    Console.WriteLine();
+
+                    do {
+                        console = Input("Change payment method? (y/n)");
+                    } while (console != "y" && console != "n");
+
+                    if (console == "n") {
+                        Console.WriteLine("Transaction cancelled.");
+                        return cashDrawer;  
+                    }
+                }
                 
                 if (drawerTotal > amount) {
                     bankInfo = MoneyRequest(account_number, amount);

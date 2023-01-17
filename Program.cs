@@ -10,6 +10,7 @@
             decimal total = 0.00m;
             decimal change = 0.00m;
             int type;
+            string cardStr;
 
             Console.WriteLine("Welcome to Self-Checkout!\n");
 
@@ -29,8 +30,8 @@
                 change = InsertCash(total, cashDrawer, intake);
                 cashDrawer = DispenseChange(change, cashDrawer, intake);
             } else if (type == 2) {
-                InsertCard(total);
-                CashBack(total, cashDrawer);
+                cardStr = InsertCard(total);
+                CashBack(total, cardStr, cashDrawer);
             }
 
         }//end main
@@ -158,7 +159,7 @@
             return validCurrency;
         }
 
-        static void InsertCard(decimal total) {
+        static string InsertCard(decimal total) {
             string console;
             bool parser;
             Int64 cardNo;
@@ -188,9 +189,11 @@
 
             validCard = IsValidCard(cardStr);
 
-            Console.WriteLine(validCard);
+            Console.WriteLine($"\nValid card: {validCard}");
             
-            Console.WriteLine($"\n{cardType}");
+            Console.WriteLine($"{cardType}\n");
+
+            return cardStr;
         }
 
         static bool IsValidCard(string cardStr) {
@@ -219,12 +222,15 @@
             return isValidCard;
         }
 
-        static Currency[] CashBack(decimal total, Currency[] cashDrawer) {
+        static Currency[] CashBack(decimal total, string cardStr, Currency[] cashDrawer) {
             string console;
             bool parser;
             bool parser2;
+            decimal amount;
             decimal withdrawal;
             decimal drawerTotal;
+            string account_number = cardStr;
+            string[] bankInfo;
             int[] placehold = {0}; 
 
             do {
@@ -233,10 +239,10 @@
 
             if (console == "y") {
                 do {
-                    console = Input("Withdraw in intervals of 20.\n(min $20 / max $200)");
-                    parser = decimal.TryParse(console, out withdrawal);
+                    console = Input("Withdraw in intervals of 10.\n(min $10 / max $200)");
+                    parser = decimal.TryParse(console, out amount);
 
-                    decimal divisor = withdrawal / 20;
+                    decimal divisor = amount / 10;
                     string divStr = divisor.ToString();
 
                     parser = int.TryParse(divStr, out int numCheck);
@@ -244,11 +250,42 @@
                 } while (parser == false);
                 drawerTotal = CheckDrawer(cashDrawer);
                 
-                if (drawerTotal > withdrawal) {
-                    DispenseChange(withdrawal, cashDrawer, placehold);
+                if (drawerTotal > amount) {
+                    bankInfo = MoneyRequest(account_number, amount);
+
+                    parser2 = decimal.TryParse(bankInfo[1], out withdrawal);
+
+                    if (parser2 == false) {
+                        Console.WriteLine("\nBank declined cashback.");
+                        amount = 0;
+                    } else if (withdrawal == amount) {
+                        Console.WriteLine("\nCashback successful.");
+                    } else {
+                        Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
+                        amount = withdrawal;
+                    }
+                    DispenseChange(amount, cashDrawer, placehold);
                 }
             }
             return cashDrawer;
+        }
+
+        static string[] MoneyRequest(string account_number, decimal amount) {
+            Random rnd = new Random();
+            //50% chance transaction passes or fails
+            bool pass = rnd.Next(100) < 50;
+            //50% chance that a failed transaction is declined
+            bool declined = rnd.Next(100) < 50;
+
+            if (pass) {
+                return new string[] { account_number, amount.ToString() };
+            } else {
+                if (!declined) {
+                    return new string[] { account_number, (amount / rnd.Next(2, 6)).ToString() };
+                } else {
+                    return new string[] { account_number, "declined" };
+                }//end if
+            }//end if
         }
 
         static Currency[] DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {

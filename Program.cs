@@ -1,4 +1,6 @@
-﻿namespace NewerKiosk {
+﻿using System.Diagnostics;
+
+namespace NewerKiosk {
     public struct Currency {
         public string type;
         public decimal value;
@@ -11,8 +13,10 @@
             decimal total = 0.00m;
             decimal change = 0.00m;
             decimal amount = 0.00m;
+            decimal dispensed = 0.00m;
             int type;
             string cardStr;
+            string cardType = "";
             bool validCard;
             paymentComplete = false;
 
@@ -33,17 +37,19 @@
 
                 if (type == 1) {
                     change = InsertCash(total, cashDrawer, intake);
-                    cashDrawer = DispenseChange(change, cashDrawer, intake);
+                    dispensed = DispenseChange(change, cashDrawer, intake);
                     paymentComplete = true;
                 } else if (type == 2) {
                     cardStr = InsertCard(total);
                     validCard = IsValidCard(cardStr);
+                    cardType = CardType(cardStr);
                     amount = CashBack(total, cardStr, validCard, cashDrawer);
                     if (paymentComplete) {
                         DispenseChange(amount, cashDrawer, intake);
                     }
                 }
             }
+            LaunchLogger(intake, cardType, total, dispensed);
 
         }//end main
 
@@ -198,6 +204,12 @@
 
             cardStr = cardNo.ToString();
 
+            return cardStr;
+        }
+
+        static string CardType(string cardStr) {
+            string cardType = "";
+
             if (cardStr[0] == '3') {
                 cardType = "American Express";
             } else if (cardStr[0] == '4') {
@@ -209,14 +221,7 @@
             } else {
                 cardType = "Other/Unknown";
             }
-
-            //validCard = IsValidCard(cardStr);
-            //
-            //Console.WriteLine($"\nValid card: {validCard}");
-            //
-            //Console.WriteLine($"{cardType}\n");
-
-            return cardStr;
+            return cardType;
         }
 
         static bool IsValidCard(string cardStr) {
@@ -351,7 +356,7 @@
 
         #region post-payment
 
-        static Currency[] DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
+        static decimal DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
             decimal dispensed = 0.00m;
             decimal drawerTotal = CheckDrawer(cashDrawer);
 
@@ -384,13 +389,13 @@
                 }
                 Console.WriteLine($"\nDispensed total: {dispensed}");
 
-                if (intake[0] > 0) {
+                //if (intake[0] > 0) {
                     cashDrawer = RefreshDrawer(cashDrawer, intake);
-                }
+                //}
                 drawerTotal = CheckDrawer(cashDrawer);
                 Console.WriteLine($"(New drawer) = {drawerTotal}");
             }
-            return cashDrawer;
+            return dispensed;
         }
 
         static decimal CheckDrawer(Currency[] cashDrawer) {
@@ -412,6 +417,14 @@
                 cashDrawer[drawer].drawerAmt = cashDrawer[drawer].drawerAmt + intake[drawer];
             }
             return cashDrawer;
+        }
+
+        static void LaunchLogger(int[] intake, string cardType, decimal total, decimal dispensed) {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "LogPackage.exe";
+            startInfo.Arguments = $"{cardType}";
+            Process.Start(startInfo);
+
         }
 
         #endregion

@@ -1,4 +1,5 @@
-﻿using System.Transactions;
+﻿using System;
+using System.Transactions;
 
 namespace NewerKiosk {
     public struct Currency {
@@ -7,13 +8,16 @@ namespace NewerKiosk {
         public int drawerAmt;
     }
     internal class Program {
+        public static bool paymentComplete;
         static void Main(string[] args) {
             decimal drawerTotal = 0.00m;
             decimal total = 0.00m;
             decimal change = 0.00m;
+            decimal amount = 0.00m;
             int type;
             string cardStr;
             bool validCard;
+            paymentComplete = false;
 
             Console.WriteLine("Welcome to Changebot! ©2023 NoHomoSapiens\n");
 
@@ -27,19 +31,26 @@ namespace NewerKiosk {
             total = ScanItems();
             DisplayTotal(total);
 
-            type = SelectPaymentType();
+            while (paymentComplete == false) {
+                type = SelectPaymentType();
 
-            if (type == 1) {
-                change = InsertCash(total, cashDrawer, intake);
-                cashDrawer = DispenseChange(change, cashDrawer, intake);
-            } else if (type == 2) {
-                cardStr = InsertCard(total);
-                validCard = IsValidCard(cardStr);
-                CashBack(total, cardStr, validCard, cashDrawer);
+                if (type == 1) {
+                    change = InsertCash(total, cashDrawer, intake);
+                    cashDrawer = DispenseChange(change, cashDrawer, intake);
+                    paymentComplete = true;
+                } else if (type == 2) {
+                    cardStr = InsertCard(total);
+                    validCard = IsValidCard(cardStr);
+                    amount = CashBack(total, cardStr, validCard, cashDrawer);
+                    if (paymentComplete) {
+                        DispenseChange(amount, cashDrawer, intake);
+                    }
+                }
             }
 
         }//end main
 
+        #region drawer
         static Currency[] InitializeDrawer() {
             Currency[] cashDrawer = new Currency[12];
 
@@ -68,6 +79,9 @@ namespace NewerKiosk {
 
             return denom;
         }
+        #endregion
+
+        #region purchase
 
         static decimal ScanItems() {
             decimal itemPrice;
@@ -114,6 +128,10 @@ namespace NewerKiosk {
 
             return type;
         }
+
+        #endregion purchase
+
+        #region cash
 
         static decimal InsertCash(decimal total, Currency[] cashDrawer, int[] intake) {
             string console;
@@ -162,6 +180,10 @@ namespace NewerKiosk {
             }
             return validCurrency;
         }
+
+        #endregion
+
+        #region card
 
         static string InsertCard(decimal total) {
             string console;
@@ -226,12 +248,12 @@ namespace NewerKiosk {
             return isValidCard;
         }
 
-        static Currency[] CashBack(decimal total, string cardStr, bool validCard, Currency[] cashDrawer) {
+        static decimal CashBack(decimal total, string cardStr, bool validCard, Currency[] cashDrawer) {
             string console;
             bool parser;
             bool parser2;
             bool request = false;
-            decimal amount;
+            decimal amount = 0;
             decimal withdrawal;
             decimal drawerTotal;
             string account_number = cardStr;
@@ -254,43 +276,36 @@ namespace NewerKiosk {
 
                     request = true;
                 } while (parser == false);
+            }
 
                 drawerTotal = CheckDrawer(cashDrawer);
 
-                if (request && validCard == false) {
-
-                    Console.WriteLine("Invalid card; unable to complete transaction.");
-                    DisplayTotal(total);
-                    Console.WriteLine();
-
-                    do {
-                        console = Input("Change payment method? (y/n)");
-                    } while (console != "y" && console != "n");
-
-                    if (console == "n") {
-                        Console.WriteLine("Transaction cancelled.");
-                        return cashDrawer;  
-                    }
+                if (validCard == false) {
+                    
+                    total = PaymentError(total, cashDrawer);
+                    return total;
                 }
                 
-                if (drawerTotal > amount) {
-                    bankInfo = MoneyRequest(account_number, amount);
+                if (request) {
+                    if (drawerTotal > amount) {
+                        bankInfo = MoneyRequest(account_number, amount);
 
-                    parser2 = decimal.TryParse(bankInfo[1], out withdrawal);
+                        parser2 = decimal.TryParse(bankInfo[1], out withdrawal);
 
-                    if (parser2 == false) {
-                        Console.WriteLine("\nBank declined cashback.");
-                        amount = 0;
-                    } else if (withdrawal == amount) {
-                        Console.WriteLine("\nCashback successful.");
-                    } else {
-                        Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
-                        amount = withdrawal;
+                        if (parser2 == false) {
+                            Console.WriteLine("\nBank declined cashback.");
+                            amount = 0;
+                        } else if (withdrawal == amount) {
+                            Console.WriteLine("\nCashback successful.");
+                        } else {
+                            Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
+                            amount = withdrawal;
+                        }
                     }
-                    DispenseChange(amount, cashDrawer, placehold);
+                    paymentComplete = true;
+                    //DispenseChange(amount, cashDrawer, placehold);
                 }
-            }
-            return cashDrawer;
+            return amount;
         }
 
         static string[] MoneyRequest(string account_number, decimal amount) {
@@ -310,6 +325,34 @@ namespace NewerKiosk {
                 }//end if
             }//end if
         }
+
+        static decimal PaymentError(decimal total, Currency[] cashDrawer) {
+            string console;
+            int type;
+
+            Console.WriteLine("Invalid card; unable to complete transaction.");
+            DisplayTotal(total);
+            Console.WriteLine();
+
+            do {
+                console = Input("Change payment method? (y/n)");
+            } while (console != "y" && console != "n");
+
+            if (console == "n") {
+                Console.WriteLine("Transaction cancelled.");
+                total = 0;
+                paymentComplete = true;
+                return total;
+
+            } else if (console == "y") {
+                return total;
+            }
+            return total;
+        }
+
+        #endregion
+
+        #region post-payment
 
         static Currency[] DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
             decimal dispensed = 0.00m;
@@ -373,6 +416,8 @@ namespace NewerKiosk {
             }
             return cashDrawer;
         }
+
+        #endregion
 
         static string Input(string prompt) {
             Console.Write(prompt);

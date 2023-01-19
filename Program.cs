@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Transactions;
 
 namespace NewerKiosk {
     public struct Currency {
@@ -13,8 +12,6 @@ namespace NewerKiosk {
             decimal drawerTotal = 0.00m;
             decimal total = 0.00m;
             decimal change = 0.00m;
-            decimal amount = 0.00m;
-            decimal dispensed = 0.00m;
             int type;
             string cardStr;
             string cardType = "";
@@ -36,24 +33,14 @@ namespace NewerKiosk {
             while (paymentComplete == false) {
                 type = SelectPaymentType();
 
-                if (type == 1) {
-                    change = InsertCash(total, cashDrawer, intake);
-                    dispensed = DispenseChange(change, cashDrawer, intake);
-                    paymentComplete = true;
-                } else if (type == 2) {
-                    cardStr = InsertCard(total);
-                    validCard = IsValidCard(cardStr);
-                    cardType = CardType(cardStr);
-                    amount = CashBack(total, cardStr, validCard, cashDrawer);
-                    if (paymentComplete) {
-                    DispenseChange(amount, cashDrawer, intake);
-                    }
-                }
+            if (type == 1) {
+                change = InsertCash(total, cashDrawer, intake);
+                cashDrawer = DispenseChange(change, cashDrawer, intake);
+            } else if (type == 2) {
+                cardStr = InsertCard(total);
+                validCard = IsValidCard(cardStr);
+                CashBack(total, cardStr, validCard, cashDrawer);
             }
-            cashDrawer = RefreshDrawer(cashDrawer, intake);
-            drawerTotal = CheckDrawer(cashDrawer);
-            Console.WriteLine($"(New drawer) = {drawerTotal}");
-            LaunchLogger(intake, cardType, total, dispensed);
 
         }//end main
 
@@ -298,19 +285,19 @@ namespace NewerKiosk {
 
                         parser2 = decimal.TryParse(bankInfo[1], out withdrawal);
 
-                        if (parser2 == false) {
-                            Console.WriteLine("\nBank declined cashback.");
-                            amount = 0;
-                        } else if (withdrawal == amount) {
-                            Console.WriteLine("\nCashback successful.");
-                        } else {
-                            Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
-                            amount = withdrawal;
-                        }
+                    if (parser2 == false) {
+                        Console.WriteLine("\nBank declined cashback.");
+                        amount = 0;
+                    } else if (withdrawal == amount) {
+                        Console.WriteLine("\nCashback successful.");
+                    } else {
+                        Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
+                        amount = withdrawal;
                     }
-                    paymentComplete = true;
+                    DispenseChange(amount, cashDrawer, placehold);
                 }
-            return amount;
+            }
+            return cashDrawer;
         }
 
         static string[] MoneyRequest(string account_number, decimal amount) {
@@ -355,11 +342,7 @@ namespace NewerKiosk {
             return total;
         }
 
-        #endregion
-
-        #region post-payment
-
-        static decimal DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
+        static Currency[] DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
             decimal dispensed = 0.00m;
             decimal drawerTotal = CheckDrawer(cashDrawer);
 

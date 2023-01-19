@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography.X509Certificates;
 
 namespace NewerKiosk {
     public struct Currency {
@@ -45,10 +46,13 @@ namespace NewerKiosk {
                     cardType = CardType(cardStr);
                     amount = CashBack(total, cardStr, validCard, cashDrawer);
                     if (paymentComplete) {
-                        DispenseChange(amount, cashDrawer, intake);
+                    DispenseChange(amount, cashDrawer, intake);
                     }
                 }
             }
+            cashDrawer = RefreshDrawer(cashDrawer, intake);
+            drawerTotal = CheckDrawer(cashDrawer);
+            Console.WriteLine($"(New drawer) = {drawerTotal}");
             LaunchLogger(intake, cardType, total, dispensed);
 
         }//end main
@@ -165,7 +169,7 @@ namespace NewerKiosk {
                     Console.WriteLine($"Remaining  {total:C}");
                 }
             }
-            decimal endTotal = total - total - total;
+            decimal endTotal = total * -1;
 
             Console.WriteLine($"\nChange     {endTotal:C}");
 
@@ -260,7 +264,7 @@ namespace NewerKiosk {
             decimal drawerTotal;
             string account_number = cardStr;
             string[] bankInfo;
-            int[] placehold = { 0 };
+            int[] intake = { 0 };
 
             do {
                 console = Input("Would you like cash-back? (y/n)");
@@ -305,7 +309,6 @@ namespace NewerKiosk {
                         }
                     }
                     paymentComplete = true;
-                    //DispenseChange(amount, cashDrawer, placehold);
                 }
             return amount;
         }
@@ -389,11 +392,6 @@ namespace NewerKiosk {
                 }
                 Console.WriteLine($"\nDispensed total: {dispensed}");
 
-                //if (intake[0] > 0) {
-                    cashDrawer = RefreshDrawer(cashDrawer, intake);
-                //}
-                drawerTotal = CheckDrawer(cashDrawer);
-                Console.WriteLine($"(New drawer) = {drawerTotal}");
             }
             return dispensed;
         }

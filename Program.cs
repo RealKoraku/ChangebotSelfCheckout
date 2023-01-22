@@ -12,12 +12,16 @@ namespace NewerKiosk {
             decimal drawerTotal = 0.00m;
             decimal total = 0.00m;
             decimal change = 0.00m;
-            decimal amount = 0.00m;
+            decimal CBamount = 0.00m;
             decimal dispensed = 0.00m;
             int type;
             string cardStr;
             string cardType = "";
             bool validCard;
+            string console;
+            bool parser;
+            decimal bankAccepted;
+            string[] bankResponse = new string[2];
             paymentComplete = false;
 
             Console.WriteLine("Welcome to Changebot! ©2023 NoHomoSapiens\n");
@@ -38,17 +42,49 @@ namespace NewerKiosk {
                 if (type == 1) {
 
                     change = InsertCash(total, cashDrawer, intake);
-                    dispensed = DispenseChange(change, cashDrawer, intake);
+                    dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     paymentComplete = true;
                 } else if (type == 2) {
 
                     cardStr = InsertCard(total);
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
-                    amount = CashBack(total, cardStr, validCard, cashDrawer);
+                    CBamount = CashBack(total, cardStr, validCard, cashDrawer);
+                    bankResponse = MoneyRequest(cardStr, total);
+
+                    if (bankResponse[1] == "declined") {
+                        Console.WriteLine("Bank declined transaction.");
+                        total = PaymentError(total, validCard, cashDrawer);
+
+                    } else if (bankResponse[1] == total.ToString()) {
+                        Console.WriteLine($"Bank accepted {total:C}");
+                        paymentComplete = true;
+
+                    } else {
+                        Console.WriteLine($"Bank accepted {bankResponse[1]}.");
+                        CBamount = 0;
+
+                        parser = decimal.TryParse(bankResponse[1],out bankAccepted);
+
+                        total = total - bankAccepted;
+                        DisplayTotal(total);
+
+                        do {
+                            console = Input("Finish payment in cash? (y/n)");
+                        } while (console.ToLower() != "y" && console.ToLower() != "n");
+
+                        if (console.ToLower() == "y") {
+                            InsertCash(total, cashDrawer, intake);
+                            paymentComplete = true;
+                        } else {
+                            Console.WriteLine("Transaction cancelled.");
+                            total = 0;
+                            paymentComplete = true;
+                        }
+                    }
 
                     if (paymentComplete) {
-                        DispenseChange(amount, cashDrawer, intake);
+                        dispensed = DispenseChange(CBamount, total, cashDrawer, intake);
                     }
                 }
             }
@@ -120,7 +156,7 @@ namespace NewerKiosk {
                 total = total + itemPrice;
             }
             return total;
-        }
+        } 
 
         static void DisplayTotal(decimal total) {
             Console.WriteLine($"\nTotal      {total:C}");
@@ -272,9 +308,9 @@ namespace NewerKiosk {
 
             do {
                 console = Input("\nWould you like cash-back? (y/n)");
-            } while (console != "n" && console != "y");
+            } while (console.ToLower() != "n" && console.ToLower() != "y");
 
-            if (console == "y") {
+            if (console.ToLower() == "y") {
                 do {
                     console = Input("\nWithdraw in intervals of 10.\n(min $10 / max $200)");
                     parser = decimal.TryParse(console, out amount);
@@ -287,8 +323,7 @@ namespace NewerKiosk {
                     request = true;
                 } while (parser == false);
 
-            } else if (console == "n" && validCard) {
-                paymentComplete = true;
+            } else if (console.ToLower() == "n" && validCard) {
                 return amount;
             }
 
@@ -302,28 +337,13 @@ namespace NewerKiosk {
                 return total;
             }
 
-            if (request) {
-                if (drawerTotal > amount) {
-                    bankInfo = MoneyRequest(account_number, amount);
+            if ((request) && (drawerTotal > amount)) {
+                        Console.WriteLine("\nCashback possible.");
 
-                    parser2 = decimal.TryParse(bankInfo[1], out withdrawal);
-
-                    if (parser2 == false) {
-                        Console.WriteLine("\nBank declined cashback.");
-                        amount = 0;
-                    } else if (withdrawal == amount) {
-                        Console.WriteLine("\nCashback successful.");
-                    } else {
-                        Console.WriteLine($"\nPartial cashback successful: {withdrawal:C}");
-                        amount = withdrawal;
-                    }
-                } else {
-
+            } else {
                     PaymentError(total, validCard, cashDrawer);
                     return total;
                 }
-                paymentComplete = true;
-            }
             return amount;
         }
 
@@ -358,15 +378,15 @@ namespace NewerKiosk {
 
             do {
                 console = Input("Change payment method? (y/n)");
-            } while (console != "y" && console != "n");
+            } while (console.ToLower() != "y" && console.ToLower() != "n");
 
-            if (console == "n") {
+            if (console.ToLower() == "n") {
                 Console.WriteLine("Transaction cancelled.");
                 total = 0;
                 paymentComplete = true;
                 return total;
 
-            } else if (console == "y") {
+            } else if (console.ToLower() == "y") {
                 return total;
             }
             return total;
@@ -376,7 +396,7 @@ namespace NewerKiosk {
 
         #region post-payment
 
-        static decimal DispenseChange(decimal changeDue, Currency[] cashDrawer, int[] intake) {
+        static decimal DispenseChange(decimal CBamount, decimal changeDue, Currency[] cashDrawer, int[] intake) {
             decimal dispensed = 0.00m;
             decimal drawerTotal = CheckDrawer(cashDrawer);
 

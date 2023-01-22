@@ -40,12 +40,11 @@ namespace NewerKiosk {
                 type = SelectPaymentType();
 
                 if (type == 1) {
-
                     change = InsertCash(total, cashDrawer, intake);
                     dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     paymentComplete = true;
-                } else if (type == 2) {
 
+                } else if (type == 2) {
                     cardStr = InsertCard(total);
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
@@ -74,7 +73,7 @@ namespace NewerKiosk {
                         } while (console.ToLower() != "y" && console.ToLower() != "n");
 
                         if (console.ToLower() == "y") {
-                            InsertCash(total, cashDrawer, intake);
+                            change = InsertCash(total, cashDrawer, intake);
                             paymentComplete = true;
                         } else {
                             Console.WriteLine("Transaction cancelled.");
@@ -84,7 +83,7 @@ namespace NewerKiosk {
                     }
 
                     if (paymentComplete) {
-                        dispensed = DispenseChange(CBamount, total, cashDrawer, intake);
+                        dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     }
                 }
             }
@@ -401,6 +400,10 @@ namespace NewerKiosk {
             decimal drawerTotal = CheckDrawer(cashDrawer);
 
             Console.WriteLine("\n      -------      ");
+
+            if (CBamount > 0) {
+                changeDue = CBamount;
+            }
 
             if (changeDue > drawerTotal) {
                 Console.WriteLine("\nInsufficient dispensable funds to complete this transaction.\nPlease pay another way.");

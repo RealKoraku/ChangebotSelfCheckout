@@ -9,11 +9,17 @@ namespace NewerKiosk {
     internal class Program {
         public static bool paymentComplete;
         static void Main(string[] args) {
+
+            string dateString = GetDate();
+            string timeString = GetTime();
+
             decimal drawerTotal = 0.00m;
             decimal total = 0.00m;
             decimal change = 0.00m;
             decimal CBamount = 0.00m;
             decimal dispensed = 0.00m;
+            decimal cashIntakeTotal = 0.00m;
+            decimal cardAmount = 0.00m;
             int type;
             string cardStr;
             string cardType = "";
@@ -31,8 +37,6 @@ namespace NewerKiosk {
 
             int[] intake = new int[cashDrawer.Length];
 
-            Console.WriteLine(drawerTotal);
-
             total = ScanItems();
             DisplayTotal(total);
 
@@ -41,6 +45,7 @@ namespace NewerKiosk {
 
                 if (type == 1) {
                     change = InsertCash(total, cashDrawer, intake);
+                    cashIntakeTotal = cashIntake(intake, cashDrawer);
                     dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     paymentComplete = true;
 
@@ -49,39 +54,48 @@ namespace NewerKiosk {
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
                     CBamount = CashBack(total, cardStr, validCard, cashDrawer);
-                    bankResponse = MoneyRequest(cardStr, total);
 
-                    if (bankResponse[1] == "declined") {
-                        Console.WriteLine("Bank declined transaction.");
-                        total = PaymentError(total, validCard, cashDrawer);
+                    if (validCard) {
 
-                    } else if (bankResponse[1] == total.ToString()) {
-                        Console.WriteLine($"Bank accepted {total:C}");
-                        paymentComplete = true;
+                        bankResponse = MoneyRequest(cardStr, total);
 
-                    } else {
-                        Console.WriteLine($"Bank accepted {bankResponse[1]}.");
-                        CBamount = 0;
+                        if (bankResponse[1] == "declined") {
+                            Console.WriteLine("Bank declined transaction.");
+                            CBamount = 0;
+                            cardAmount = 0;
+                            total = PaymentError(total, validCard, cashDrawer);
 
-                        parser = decimal.TryParse(bankResponse[1],out bankAccepted);
-
-                        total = total - bankAccepted;
-                        DisplayTotal(total);
-
-                        do {
-                            console = Input("Finish payment in cash? (y/n)");
-                        } while (console.ToLower() != "y" && console.ToLower() != "n");
-
-                        if (console.ToLower() == "y") {
-                            change = InsertCash(total, cashDrawer, intake);
+                        } else if (bankResponse[1] == total.ToString()) {
+                            Console.WriteLine($"Bank accepted {total:C}");
+                            cardAmount = total;
                             paymentComplete = true;
+
                         } else {
-                            Console.WriteLine("Transaction cancelled.");
-                            total = 0;
-                            paymentComplete = true;
+                            Console.WriteLine($"Bank accepted {bankResponse[1]:C}.");
+                            CBamount = 0;
+
+                            parser = decimal.TryParse(bankResponse[1], out bankAccepted);
+
+                            total = total - bankAccepted;
+
+                            cardAmount = bankAccepted;
+                            DisplayTotal(total);
+
+                            do {
+                                console = Input("Finish payment in cash? (y/n)");
+                            } while (console.ToLower() != "y" && console.ToLower() != "n");
+
+                            if (console.ToLower() == "y") {
+                                change = InsertCash(total, cashDrawer, intake);
+                                cashIntakeTotal = cashIntake(intake, cashDrawer);
+                                paymentComplete = true;
+                            } else {
+                                Console.WriteLine("Transaction cancelled.");
+                                total = 0;
+                                paymentComplete = true;
+                            }
                         }
                     }
-
                     if (paymentComplete) {
                         dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     }
@@ -90,9 +104,8 @@ namespace NewerKiosk {
 
             cashDrawer = RefreshDrawer(cashDrawer, intake);
             drawerTotal = CheckDrawer(cashDrawer);
-            Console.WriteLine($"(New drawer) = {drawerTotal}");
 
-            LaunchLogger(intake, cardType, total, dispensed);
+            LaunchLogger(dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
 
         }//end main
 
@@ -213,6 +226,15 @@ namespace NewerKiosk {
             Console.WriteLine($"\nChange     {endTotal:C}");
 
             return endTotal;
+        }
+
+        static decimal cashIntake(int[] intake, Currency[] cashDrawer) {
+            decimal cashIntakeTotal = 0.00m;
+
+            for (int i = 0; i < intake.Length; i++) {
+                cashIntakeTotal = cashIntakeTotal + (intake[i] * cashDrawer[i].value);
+            }
+            return cashIntakeTotal;
         }
 
         static bool IsValidCurrency(decimal payment, Currency[] cashDrawer) {
@@ -433,8 +455,7 @@ namespace NewerKiosk {
                         }
                     }
                 }
-                Console.WriteLine($"\nDispensed total: {dispensed}");
-                Console.WriteLine("Payment successful.");
+                Console.WriteLine($"\nDispensed total: {dispensed:C}");
                 paymentComplete = true;
 
             }
@@ -462,12 +483,39 @@ namespace NewerKiosk {
             return cashDrawer;
         }
 
-        static void LaunchLogger(int[] intake, string cardType, decimal total, decimal dispensed) {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = "LogPackage.exe";
-            startInfo.Arguments = $"{cardType}";
-            Process.Start(startInfo);
+        static string GetDate() {
+            string dateString;
+            string[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+            DateTime dateTime = DateTime.Now;
 
+            string[] currentDate = { dateTime.Month.ToString(), dateTime.Day.ToString(), dateTime.Year.ToString() };
+
+            for (int month = 0; month < months.Length; month++) {
+                if (dateTime.Month == month + 1) {
+                    currentDate[0] = months[month];
+                }
+            }
+            dateString = $"{currentDate[0]}-{currentDate[1]}-{currentDate[2]}";
+            Console.WriteLine(dateString);
+            return dateString;
+        }
+
+        static string GetTime() {
+            string timeString;
+            DateTime dateTime = DateTime.Now;
+
+            string[] currentTime = { dateTime.Hour.ToString(), dateTime.Minute.ToString(), dateTime.Second.ToString() };
+            timeString = $"{currentTime[0]}:{currentTime[1]}:{currentTime[2]}";
+
+            return timeString;
+        }
+
+        static void LaunchLogger(string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
+            
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"C:\Users\MCA\source\repos\Evaluations\TransactionLogger\bin\Debug\net6.0\TransactionLogger.exe";
+            startInfo.Arguments = $"{dispensed},";
+            Process.Start(startInfo);
         }
 
         #endregion

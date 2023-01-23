@@ -22,12 +22,13 @@ namespace NewerKiosk {
             decimal cardAmount = 0.00m;
             int type;
             string cardStr;
-            string cardType = "";
+            string cardType = "None";
             bool validCard;
             string console;
             bool parser;
-            decimal bankAccepted;
+            decimal bankAccepted = 0.00m;
             string[] bankResponse = new string[2];
+            string transactionNo = "";
             paymentComplete = false;
 
             Console.WriteLine("Welcome to Changebot! ©2023 NoHomoSapiens\n");
@@ -104,8 +105,9 @@ namespace NewerKiosk {
 
             cashDrawer = RefreshDrawer(cashDrawer, intake);
             drawerTotal = CheckDrawer(cashDrawer);
+            transactionNo = TransactionNumber();
 
-            LaunchLogger(dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
+            LaunchLogger(transactionNo, dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
 
         }//end main
 
@@ -483,6 +485,19 @@ namespace NewerKiosk {
             return cashDrawer;
         }
 
+        static string TransactionNumber() {
+            Random rand = new Random();
+            int[] nums = new int[10];
+            string transactionNo = "";
+
+            for (int i = 0; i < nums.Length; i++) {
+                nums[i] = rand.Next(0, 10);
+                transactionNo = transactionNo + nums[i];
+            }
+            Console.WriteLine(transactionNo);
+            return transactionNo;
+        }
+
         static string GetDate() {
             string dateString;
             string[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
@@ -510,11 +525,11 @@ namespace NewerKiosk {
             return timeString;
         }
 
-        static void LaunchLogger(string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
+        static void LaunchLogger(string transactionNo, string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
             
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = @"C:\Users\MCA\source\repos\Evaluations\TransactionLogger\bin\Debug\net6.0\TransactionLogger.exe";
-            startInfo.Arguments = $"{dispensed},";
+            startInfo.Arguments = transactionNo + " " + dateString + " " + timeString + " " + cashIntakeTotal.ToString() + " " + cardType + " " + cardAmount.ToString() + " " + dispensed.ToString() + " ";
             Process.Start(startInfo);
         }
 

@@ -31,7 +31,7 @@ namespace NewerKiosk {
             string transactionNo = "";
             paymentComplete = false;
 
-            Console.WriteLine("Welcome to Changebot! ©2023 NoHomoSapiens\n");
+            Console.WriteLine("Welcome to Changebot! 2023 NoHomoSapiens\n");
 
             Currency[] cashDrawer = InitializeDrawer();
             drawerTotal = CheckDrawer(cashDrawer);

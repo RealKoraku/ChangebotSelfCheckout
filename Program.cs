@@ -1,19 +1,33 @@
 ﻿using System.Diagnostics;
 
-namespace NewerKiosk {
-    public struct Currency {
-        public string type;
-        public decimal value;
-        public int drawerAmt;
+namespace NewerKiosk;
+
+public struct Currency {
+    public string type;
+    public decimal value;
+    public int drawerAmt;
+
+    public Currency(string atype, decimal avalue, int aamt) {
+        type = atype;
+        value = avalue;
+        drawerAmt = aamt;
     }
-    internal class Program {
-        public static bool paymentComplete;
-        static void Main(string[] args) {
+}
+internal class Program {
+    public static bool paymentComplete;
+    static void Main(string[] args) {
+        decimal drawerTotal = 0.00m;
+
+        Currency[] cashDrawer = InitializeDrawer();
+        drawerTotal = CheckDrawer(cashDrawer);
+
+        while (true) {
+
+            Console.ForegroundColor = ConsoleColor.White;
 
             string dateString = GetDate();
             string timeString = GetTime();
 
-            decimal drawerTotal = 0.00m;
             decimal total = 0.00m;
             decimal change = 0.00m;
             decimal CBamount = 0.00m;
@@ -29,16 +43,15 @@ namespace NewerKiosk {
             decimal bankAccepted = 0.00m;
             string[] bankResponse = new string[2];
             string transactionNo = "";
+
             paymentComplete = false;
 
             Console.WriteLine("Welcome to Changebot! 2023 NoHomoSapiens\n");
 
-            Currency[] cashDrawer = InitializeDrawer();
-            drawerTotal = CheckDrawer(cashDrawer);
-
             int[] intake = new int[cashDrawer.Length];
 
             total = ScanItems();
+            total = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
             DisplayTotal(total);
 
             while (paymentComplete == false) {
@@ -61,7 +74,9 @@ namespace NewerKiosk {
                         bankResponse = MoneyRequest(cardStr, total);
 
                         if (bankResponse[1] == "declined") {
-                            Console.WriteLine("Bank declined transaction.");
+
+                            DarkRedText("Bank declined transaction.");
+                            
                             CBamount = 0;
                             cardAmount = 0;
                             total = PaymentError(total, validCard, cashDrawer);
@@ -108,38 +123,38 @@ namespace NewerKiosk {
             transactionNo = TransactionNumber();
 
             LaunchLogger(transactionNo, dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
-
+        }
         }//end main
 
         #region drawer
         static Currency[] InitializeDrawer() {
             Currency[] cashDrawer = new Currency[12];
 
-            cashDrawer[0] = CreateCurrency("penny", 0.01m, 300);
-            cashDrawer[1] = CreateCurrency("nickel", 0.05m, 200);
-            cashDrawer[2] = CreateCurrency("dime", 0.10m, 100);
-            cashDrawer[3] = CreateCurrency("quarter", 0.25m, 100);
-            cashDrawer[4] = CreateCurrency("half-dollar", 0.50m, 0);
-            cashDrawer[5] = CreateCurrency("one", 1.00m, 200);
-            cashDrawer[6] = CreateCurrency("two", 2.00m, 0);
-            cashDrawer[7] = CreateCurrency("five", 5.00m, 100);
-            cashDrawer[8] = CreateCurrency("ten", 10.00m, 50);
-            cashDrawer[9] = CreateCurrency("twenty", 20.00m, 40);
-            cashDrawer[10] = CreateCurrency("fifty", 50.00m, 40);
-            cashDrawer[11] = CreateCurrency("hundred", 100.00m, 20);
+            cashDrawer[0] = new("penny", 0.01m, 300);
+            cashDrawer[1] = new("nickel", 0.05m, 200);
+            cashDrawer[2] = new("dime", 0.10m, 100);
+            cashDrawer[3] = new("quarter", 0.25m, 100);
+            cashDrawer[4] = new("half-dollar", 0.50m, 0);
+            cashDrawer[5] = new("one", 1.00m, 200);
+            cashDrawer[6] = new("two", 2.00m, 0);
+            cashDrawer[7] = new("five", 5.00m, 100);
+            cashDrawer[8] = new("ten", 10.00m, 50);
+            cashDrawer[9] = new("twenty", 20.00m, 40);
+            cashDrawer[10] = new("fifty", 50.00m, 40);
+            cashDrawer[11] = new("hundred", 100.00m, 20);
 
             return cashDrawer;
         }
 
-        static Currency CreateCurrency(string type, decimal value, int amt) {
-            Currency denom = new Currency();
+        //static Currency CreateCurrency(string type, decimal value, int amt) {
+        //    Currency denom = new Currency();
 
-            denom.type = type;
-            denom.value = value;
-            denom.drawerAmt = amt;
+        //    denom.type = type;
+        //    denom.value = value;
+        //    denom.drawerAmt = amt;
 
-            return denom;
-        }
+        //    return denom;
+        //}
         #endregion
 
         #region purchase
@@ -170,10 +185,10 @@ namespace NewerKiosk {
                 total = total + itemPrice;
             }
             return total;
-        } 
+        }
 
         static void DisplayTotal(decimal total) {
-            Console.WriteLine($"\nTotal      {total:C}");
+             GreenText($"\nTotal      {total:C}");
         }
 
         static int SelectPaymentType() {
@@ -182,7 +197,7 @@ namespace NewerKiosk {
             int type;
 
             do {
-                console = Input("\nSelect payment type:\nCash (1)\nCard (2)");
+                console = Input("\nSelect payment type:\nCash (1)\nCard (2)\n");
                 parser = int.TryParse(console, out type);
 
             } while ((parser == false) || (type != 1 && type != 2));
@@ -220,7 +235,7 @@ namespace NewerKiosk {
                 }
 
                 if (total > 0.00m) {
-                    Console.WriteLine($"Remaining  {total:C}");
+                Console.WriteLine($"Remaining  {total:C}");
                 }
             }
             decimal endTotal = total * -1;
@@ -360,13 +375,11 @@ namespace NewerKiosk {
                 return total;
             }
 
-            if ((request) && (drawerTotal > amount)) {
-                        Console.WriteLine("\nCashback possible.");
+            if ((request) && (drawerTotal < amount)) {
+                PaymentError(total, validCard, cashDrawer);
 
-            } else {
-                    PaymentError(total, validCard, cashDrawer);
-                    return total;
-                }
+                return total;
+            }
             return amount;
         }
 
@@ -395,7 +408,7 @@ namespace NewerKiosk {
             if (validCard == false) {
                 Console.WriteLine("Invalid card");
             }
-            Console.WriteLine("Unable to complete transaction.");
+            DarkRedText("Unable to complete transaction.");
             DisplayTotal(total);
             Console.WriteLine();
 
@@ -430,7 +443,7 @@ namespace NewerKiosk {
             }
 
             if (changeDue > drawerTotal) {
-                Console.WriteLine("\nInsufficient dispensable funds to complete this transaction.\nPlease pay another way.");
+                DarkRedText("\nInsufficient dispensable funds to complete this transaction.\nPlease pay another way.");
                 paymentComplete = false;
                 return changeDue;
 
@@ -451,13 +464,13 @@ namespace NewerKiosk {
                         }
 
                         if ((i == 0) && (cashDrawer[i].drawerAmt == 0) && (changeDue > 0)) {
-                            Console.WriteLine("\nInsufficient available funds to complete this purchase.\nPlease pay another way.");
+                            DarkRedText("\nInsufficient available funds to complete this purchase.\nPlease pay another way.");
                             paymentComplete = false;
                             return changeDue;
                         }
                     }
                 }
-                Console.WriteLine($"\nDispensed total: {dispensed:C}");
+                GreenText($"\nDispensed total: {dispensed:C}");
                 paymentComplete = true;
 
             }
@@ -494,7 +507,6 @@ namespace NewerKiosk {
                 nums[i] = rand.Next(0, 10);
                 transactionNo = transactionNo + nums[i];
             }
-            Console.WriteLine(transactionNo);
             return transactionNo;
         }
 
@@ -526,12 +538,24 @@ namespace NewerKiosk {
         }
 
         static void LaunchLogger(string transactionNo, string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
-            
+
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = @"C:\Users\MCA\source\repos\Evaluations\TransactionLogger\bin\Debug\net6.0\TransactionLogger.exe";
             startInfo.Arguments = transactionNo + " " + dateString + " " + timeString + " " + cashIntakeTotal.ToString() + " " + cardType + " " + cardAmount.ToString() + " " + dispensed.ToString() + " ";
             Process.Start(startInfo);
         }
+
+        static void DarkRedText(string text) {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(text);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        
+        static void GreenText(string text) {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(text);
+            Console.ForegroundColor = ConsoleColor.White;
+    }
 
         #endregion
 
@@ -540,4 +564,3 @@ namespace NewerKiosk {
             return Console.ReadLine();
         }
     }
-}

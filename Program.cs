@@ -67,6 +67,7 @@ internal class Program {
                     cardStr = InsertCard(total);
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
+                    GreenText(cardType);
                     CBamount = CashBack(total, cardStr, validCard, cashDrawer);
 
                     if (validCard) {
@@ -124,7 +125,7 @@ internal class Program {
 
             LaunchLogger(transactionNo, dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
         }
-        }//end main
+    }//end main
 
         #region drawer
         static Currency[] InitializeDrawer() {
@@ -219,7 +220,7 @@ internal class Program {
             for (int pay = 0; total > 0.00m; pay++) {
 
                 do {
-                    console = Input($"Payment {pay + 1}  $");
+                    console = Input($"\nPayment {pay + 1}  $");
                     parser = decimal.TryParse(console, out payment);
 
                     validCurrency = IsValidCurrency(payment, cashDrawer);
@@ -240,7 +241,7 @@ internal class Program {
             }
             decimal endTotal = total * -1;
 
-            Console.WriteLine($"\nChange     {endTotal:C}");
+            GreenText($"\nChange     {endTotal:C}");
 
             return endTotal;
         }
@@ -277,7 +278,6 @@ internal class Program {
             string cardStr;
             int[] card = new int[16];
             bool validCard;
-            string cardType = "";
 
             do {
                 console = Input("\nPlease enter your 16-digit card number: ");
@@ -337,7 +337,7 @@ internal class Program {
             bool parser;
             bool parser2;
             bool request = false;
-            decimal amount = 0;
+            int amount = 0;
             decimal withdrawal;
             decimal drawerTotal;
             string account_number = cardStr;
@@ -350,13 +350,12 @@ internal class Program {
 
             if (console.ToLower() == "y") {
                 do {
-                    console = Input("\nWithdraw in intervals of 10.\n(min $10 / max $200)");
-                    parser = decimal.TryParse(console, out amount);
+                    console = Input("\nWithdraw in multiples of 1.\n");
+                    parser = int.TryParse(console, out amount);
 
-                    decimal divisor = amount / 10;
-                    string divStr = divisor.ToString();
-
-                    parser = int.TryParse(divStr, out int numCheck);
+                    //string divStr = divisor.ToString();
+                    //
+                    //parser = int.TryParse(divStr, out int numCheck);
 
                     request = true;
                 } while (parser == false);
@@ -555,7 +554,7 @@ internal class Program {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(text);
             Console.ForegroundColor = ConsoleColor.White;
-    }
+        }
 
         #endregion
 

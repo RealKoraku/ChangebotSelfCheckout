@@ -46,7 +46,7 @@ internal class Program {
 
             DrawTitle();
 
-            Console.WriteLine("Welcome to Changebot! 2023 NoHomoSapiens\n");
+            Console.WriteLine("Welcome to Changebot!\n");
 
             int[] intake = new int[cashDrawer.Length];
 
@@ -125,6 +125,10 @@ internal class Program {
             Console.WriteLine("Thank you. Please take your change.\n");
 
             LaunchLogger(transactionNo, dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
+
+            Console.WriteLine("Press any key to begin next transaction.");
+            Console.ReadKey();
+            Console.Clear();
         }
     }//end main
 
@@ -561,10 +565,10 @@ internal class Program {
 
     static void DrawTitle() {
         BlueText("   ____");
-        BlueText("  /      /    _    ___  ___  __   /        _/_");
-        BlueText(" /      /__  __\\  /  / /  / /_/  /__  ___  /");
-        BlueText("/____  /  / /__/ /  / /__/ /___ /__/ /__/ /");
-        BlueText("                     ___/\n");
+        BlueText("  /     /    _    ___  ___  __   /        _/_");
+        BlueText(" /     /__  __\\  /  / /  / /_/  /__  ___  /");
+        BlueText("/____ /  / /__/ /  / /__/ /___ /__/ /__/ /");
+        BlueText("                    ___/  NoHomoSapiens Corp.\n");
     }
 
     #endregion

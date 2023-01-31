@@ -21,11 +21,13 @@ internal class Program {
         Currency[] cashDrawer = InitializeDrawer();
         drawerTotal = CheckDrawer(cashDrawer);
 
+        int[] intake = new int[cashDrawer.Length];
+
         while (true) {
             string dateString = GetDate();
             string timeString = GetTime();
 
-            decimal total = 0.00m;
+            decimal purchaseTotal = 0.00m;
             decimal change = 0.00m;
             decimal CBamount = 0.00m;
             decimal dispensed = 0.00m;
@@ -48,73 +50,90 @@ internal class Program {
 
             Console.WriteLine("Welcome to Changebot!\n");
 
-            int[] intake = new int[cashDrawer.Length];
-
-            total = ScanItems();
-            total = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
-            DisplayTotal(total);
+            purchaseTotal = ScanItems();
+            purchaseTotal = decimal.Round(purchaseTotal, 2, MidpointRounding.AwayFromZero);
+            DisplayTotal(purchaseTotal);
 
             while (paymentComplete == false) {
+
+                intake = new int[cashDrawer.Length];
+
                 type = SelectPaymentType();
 
                 if (type == 1) {
-                    change = InsertCash(total, cashDrawer, intake);
+                    change = InsertCash(purchaseTotal, cashDrawer, intake);
                     cashIntakeTotal = cashIntake(intake, cashDrawer);
                     dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     paymentComplete = true;
 
                 } else if (type == 2) {
-                    cardStr = InsertCard(total);
+                    cardStr = InsertCard(purchaseTotal);
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
                     GreenText(cardType);
-                    CBamount = CashBack(total, cardStr, validCard, cashDrawer);
+                    CBamount = CashBack(purchaseTotal, cardStr, validCard, cashDrawer);
+                    cardAmount = purchaseTotal + CBamount;
 
                     if (validCard) {
 
-                        bankResponse = MoneyRequest(cardStr, total);
+                        bankResponse = MoneyRequest(cardStr, cardAmount);
                         parser = decimal.TryParse(bankResponse[1], out acceptedAmt);
                         acceptedAmt = decimal.Round(acceptedAmt, 2, MidpointRounding.AwayFromZero);
 
                         if (bankResponse[1] == "declined") {
                             Console.WriteLine("Bank declined transaction.");
-                            
+
                             CBamount = 0;
                             cardAmount = 0;
-                            total = PaymentError(total, validCard, cashDrawer);
+                            purchaseTotal = PaymentError(purchaseTotal, validCard, cashDrawer);
 
-                        } else if (acceptedAmt == total) {
+                        } else if (acceptedAmt == cardAmount) {
                             GreenText($"Bank approved transaction.");
-                            cardAmount = total;
+                            cardAmount = purchaseTotal + CBamount;
                             paymentComplete = true;
 
                         } else {
+
                             Console.WriteLine($"Bank approved {acceptedAmt:C}.");
-                            CBamount = 0;
 
-                            total = total - acceptedAmt;
+                            if (CBamount > 0) {
+                                DarkRedText("\nCashback not approved.");
+                                CBamount = 0;
+                            }
 
-                            cardAmount = acceptedAmt;
-                            DisplayTotal(total);
-
-                            do {
-                                console = Input("Finish payment in cash? (y/n)");
-                            } while (console.ToLower() != "y" && console.ToLower() != "n");
-
-                            if (console.ToLower() == "y") {
-                                change = InsertCash(total, cashDrawer, intake);
-                                cashIntakeTotal = cashIntake(intake, cashDrawer);
+                            if (acceptedAmt > purchaseTotal) {
+                                acceptedAmt = purchaseTotal;
+                                cardAmount = purchaseTotal;
+                                Console.WriteLine("Transaction complete.");
                                 paymentComplete = true;
+
                             } else {
-                                Console.WriteLine("Transaction cancelled.");
-                                total = 0;
-                                paymentComplete = true;
+
+                                purchaseTotal = purchaseTotal - acceptedAmt;
+
+                                cardAmount = acceptedAmt;
+                                DisplayTotal(purchaseTotal);
+
+                                do {
+                                    console = Input("Finish payment in cash? (y/n)");
+                                } while (console.ToLower() != "y" && console.ToLower() != "n");
+
+                                if (console.ToLower() == "y") {
+                                    change = InsertCash(purchaseTotal, cashDrawer, intake);
+                                    cashIntakeTotal = cashIntake(intake, cashDrawer);
+                                    paymentComplete = true;
+                                } else {
+                                    Console.WriteLine("\nTransaction cancelled.");
+                                    purchaseTotal = 0;
+                                    cardAmount = 0;
+                                    paymentComplete = true;
+                                }
                             }
                         }
                     }
                     if (paymentComplete) {
                         dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
-                        
+
                     }
                 }
             }
@@ -194,7 +213,7 @@ internal class Program {
     }
 
     static void DisplayTotal(decimal total) {
-         GreenText($"\nTotal      {total:C}");
+        GreenText($"\nTotal      {total:C}");
     }
 
     static int SelectPaymentType() {
@@ -241,7 +260,7 @@ internal class Program {
             }
 
             if (total > 0.00m) {
-            Console.WriteLine($"Remaining  {total:C}");
+                Console.WriteLine($"Remaining  {total:C}");
             }
         }
         decimal endTotal = total * -1;
@@ -550,7 +569,7 @@ internal class Program {
         Console.WriteLine(text);
         Console.ForegroundColor = ConsoleColor.White;
     }
-    
+
     static void GreenText(string text) {
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine(text);
@@ -565,8 +584,8 @@ internal class Program {
 
     static void DrawTitle() {
         BlueText("   ____");
-        BlueText("  /     /    _    ___  ___  __   /        _/_");
-        BlueText(" /     /__  __\\  /  / /  / /_/  /__  ___  /");
+        BlueText("  /     /    _    _    ___  __   /        _/_");
+        BlueText(" /     /__  __\\  / \\  /  / /_/  /__  ___  /");
         BlueText("/____ /  / /__/ /  / /__/ /___ /__/ /__/ /");
         BlueText("                    ___/  NoHomoSapiens Corp.\n");
     }

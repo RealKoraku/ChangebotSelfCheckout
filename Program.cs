@@ -2,7 +2,7 @@
 
 namespace NewerKiosk;
 
-public struct Currency {
+public struct Currency {        //create Currency struct
     public string type;
     public decimal value;
     public int drawerAmt;
@@ -18,16 +18,16 @@ internal class Program {
     static void Main(string[] args) {
         decimal drawerTotal = 0.00m;
 
-        Currency[] cashDrawer = InitializeDrawer();
+        Currency[] cashDrawer = InitializeDrawer();      //fill drawer
         drawerTotal = CheckDrawer(cashDrawer);
 
         int[] intake = new int[cashDrawer.Length];
 
-        while (true) {
-            string dateString = GetDate();
+        while (true) {                                  //loop the program
+            string dateString = GetDate();              //get current time and date
             string timeString = GetTime();
 
-            decimal purchaseTotal = 0.00m;
+            decimal purchaseTotal = 0.00m;              //initialize variables
             decimal change = 0.00m;
             decimal CBamount = 0.00m;
             decimal dispensed = 0.00m;
@@ -44,42 +44,42 @@ internal class Program {
             string[] bankResponse = new string[2];
             string transactionNo = "";
 
-            paymentComplete = false;
+            paymentComplete = false;                   
 
-            DrawTitle();
+            DrawTitle();                                //Changebot ASCII title
 
             Console.WriteLine("Welcome to Changebot!\n");
 
-            purchaseTotal = ScanItems();
+            purchaseTotal = ScanItems();                //user scans items, total rounded to 2 decimal points
             purchaseTotal = decimal.Round(purchaseTotal, 2, MidpointRounding.AwayFromZero);
             DisplayTotal(purchaseTotal);
 
-            while (paymentComplete == false) {
+            while (paymentComplete == false) {          //loop while payment is not complete
 
-                intake = new int[cashDrawer.Length];
+                intake = new int[cashDrawer.Length];    //create cash intake array 
 
-                type = SelectPaymentType();
+                type = SelectPaymentType();             //user selects payment type
 
-                if (type == 1) {
+                if (type == 1) {                        //cash payments
                     change = InsertCash(purchaseTotal, cashDrawer, intake);
                     cashIntakeTotal = cashIntake(intake, cashDrawer);
                     dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
                     paymentComplete = true;
 
-                } else if (type == 2) {
+                } else if (type == 2) {                 //card payment
                     cardStr = InsertCard(purchaseTotal);
                     validCard = IsValidCard(cardStr);
                     cardType = CardType(cardStr);
                     GreenText(cardType);
                     CBamount = CashBack(purchaseTotal, cardStr, validCard, cashDrawer);
                     cardAmount = purchaseTotal + CBamount;
-
+                                                        //'cardAmount' is full card charge
                     if (validCard) {
 
                         bankResponse = MoneyRequest(cardStr, cardAmount);
                         parser = decimal.TryParse(bankResponse[1], out acceptedAmt);
                         acceptedAmt = decimal.Round(acceptedAmt, 2, MidpointRounding.AwayFromZero);
-
+                                                        //bank card response
                         if (bankResponse[1] == "declined") {
                             Console.WriteLine("Bank declined transaction.");
 
@@ -92,29 +92,29 @@ internal class Program {
                             cardAmount = purchaseTotal + CBamount;
                             paymentComplete = true;
 
-                        } else {
+                        } else {                        //if payment partially accepted
 
                             Console.WriteLine($"Bank approved {acceptedAmt:C}.");
 
-                            if (CBamount > 0) {
+                            if (CBamount > 0) {         //cancel cashback if not fully approved
                                 DarkRedText("\nCashback not approved.");
                                 CBamount = 0;
                             }
-
+                                                        //purchase still complete if approved over the item total
                             if (acceptedAmt > purchaseTotal) {
                                 acceptedAmt = purchaseTotal;
                                 cardAmount = purchaseTotal;
                                 Console.WriteLine("Transaction complete.");
                                 paymentComplete = true;
 
-                            } else {
+                            } else {                    //else purchase only partially complete
 
                                 purchaseTotal = purchaseTotal - acceptedAmt;
 
                                 cardAmount = acceptedAmt;
                                 DisplayTotal(purchaseTotal);
 
-                                do {
+                                do {                    //option to complete payment in cash
                                     console = Input("Finish payment in cash? (y/n)");
                                 } while (console.ToLower() != "y" && console.ToLower() != "n");
 
@@ -122,7 +122,7 @@ internal class Program {
                                     change = InsertCash(purchaseTotal, cashDrawer, intake);
                                     cashIntakeTotal = cashIntake(intake, cashDrawer);
                                     paymentComplete = true;
-                                } else {
+                                } else {                
                                     Console.WriteLine("\nTransaction cancelled.");
                                     purchaseTotal = 0;
                                     cardAmount = 0;
@@ -131,20 +131,20 @@ internal class Program {
                             }
                         }
                     }
-                    if (paymentComplete) {
+                    if (paymentComplete) {              //dispense change 
                         dispensed = DispenseChange(CBamount, change, cashDrawer, intake);
 
                     }
                 }
             }
-
+                                                        //redispense cash to drawer after purchase
             cashDrawer = RefreshDrawer(cashDrawer, intake);
             drawerTotal = CheckDrawer(cashDrawer);
-            transactionNo = TransactionNumber();
+            transactionNo = TransactionNumber();        //build transaction no
             Console.WriteLine("Thank you. Please take your change.\n");
-
+                                                        //save to log
             LaunchLogger(transactionNo, dateString, timeString, cashIntakeTotal, cardType, cardAmount, dispensed);
-
+                                                        //restart at while(true) loop
             Console.WriteLine("Press any key to begin next transaction.");
             Console.ReadKey();
             Console.Clear();
@@ -155,7 +155,7 @@ internal class Program {
     static Currency[] InitializeDrawer() {
         Currency[] cashDrawer = new Currency[12];
 
-        cashDrawer[0] = new("penny", 0.01m, 300);
+        cashDrawer[0] = new("penny", 0.01m, 300);   //each currency has a type, value, and amount
         cashDrawer[1] = new("nickel", 0.05m, 200);
         cashDrawer[2] = new("dime", 0.10m, 100);
         cashDrawer[3] = new("quarter", 0.25m, 100);
@@ -195,19 +195,19 @@ internal class Program {
             do {
                 console = Input($"Item #{item + 1}    $");
 
-                if ((console == "") && (item > 0)) {
+                if ((console == "") && (item > 0)) {    //if 1 item scanned and blank, done
                     scanDone = true;
                 }
 
                 parser = decimal.TryParse(console, out itemPrice);
 
-                if (itemPrice < 0) {
+                if (itemPrice < 0) {                    //no negative prices
                     parser = false;
                 }
 
             } while (parser == false && scanDone == false);
 
-            total = total + itemPrice;
+            total = total + itemPrice;                  //figure total
         }
         return total;
     }
@@ -244,28 +244,28 @@ internal class Program {
         for (int pay = 0; total > 0.00m; pay++) {
 
             do {
-                console = Input($"\nPayment {pay + 1}  $");
+                console = Input($"\nPayment {pay + 1}  $");     //make payments, validate currency
                 parser = decimal.TryParse(console, out payment);
 
                 validCurrency = IsValidCurrency(payment, cashDrawer);
 
             } while (parser == false || validCurrency == false);
 
-            total = total - payment;
+            total = total - payment;                            //subtract payment from total
 
             for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {
                 if (payment == cashDrawer[drawer].value) {
-                    intake[drawer]++;
+                    intake[drawer]++;                           //add each inserted cash to intake array
                 }
             }
 
             if (total > 0.00m) {
-                Console.WriteLine($"Remaining  {total:C}");
+                Console.WriteLine($"Remaining  {total:C}");     //show remaining total 
             }
         }
-        decimal endTotal = total * -1;
+        decimal endTotal = total * -1;                          //flip to positive value
 
-        GreenText($"\nChange     {endTotal:C}");
+        GreenText($"\nChange     {endTotal:C}");                //show change due
 
         return endTotal;
     }
@@ -273,7 +273,7 @@ internal class Program {
     static decimal cashIntake(int[] intake, Currency[] cashDrawer) {
         decimal cashIntakeTotal = 0.00m;
 
-        for (int i = 0; i < intake.Length; i++) {
+        for (int i = 0; i < intake.Length; i++) {                   //figure total cash inserted
             cashIntakeTotal = cashIntakeTotal + (intake[i] * cashDrawer[i].value);
         }
         return cashIntakeTotal;
@@ -284,7 +284,7 @@ internal class Program {
 
         for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {
             if (payment == cashDrawer[drawer].value) {
-                validCurrency = true;
+                validCurrency = true;                               //verify bills are valid/accepted in drawer
                 return validCurrency;
             }
         }
@@ -316,7 +316,7 @@ internal class Program {
     static string CardType(string cardStr) {
         string cardType = "";
 
-        if (cardStr[0] == '3') {
+        if (cardStr[0] == '3') {                    //check first number of card for vendor
             cardType = "American Express";
         } else if (cardStr[0] == '4') {
             cardType = "Visa";
@@ -344,15 +344,15 @@ internal class Program {
             aNum = (int)char.GetNumericValue(cardStr[i]);
             card[i] = aNum;
 
-            numSum = numSum + card[i];
+            numSum = numSum + card[i];          //add each card number together
         }
 
-        numProduct = numSum / 10;
-        numProduct = numProduct + 0.1;
+        numProduct = numSum / 10;               //divide by 10
+        numProduct = numProduct + 0.1;          //add 0.1 to quotient
         productStr = numProduct.ToString();
 
         isValidCard = int.TryParse(productStr, out finalNum);
-
+                                                //check if whole num or fraction
         return isValidCard;
     }
 
@@ -381,7 +381,7 @@ internal class Program {
 
                 request = true;
 
-                if (drawerTotal < amount) {
+                if (drawerTotal < amount) {    
                     DarkRedText("Insufficient funds to complete this request. Please try again.");
                 }
             } while ((parser == false) || (drawerTotal < amount));
@@ -435,7 +435,7 @@ internal class Program {
         DisplayTotal(total);
         Console.WriteLine();
 
-        do {
+        do {                            //change payment or cancel after error occured
             console = Input("Change payment method? (y/n)");
         } while (console.ToLower() != "y" && console.ToLower() != "n");
 
@@ -461,7 +461,7 @@ internal class Program {
 
         Console.WriteLine("\n      -------      ");
 
-        if (CBamount > 0) {
+        if (CBamount > 0) {     //cards will rceive cashback as change
             changeDue = CBamount;
         }
 
@@ -472,16 +472,16 @@ internal class Program {
 
         } else {
 
-            for (int i = cashDrawer.Length - 1; i > -1; i--) {
+            for (int i = cashDrawer.Length - 1; i > -1; i--) {          //start at largest bill denomination in drawer
 
-                if (changeDue > 0) {
+                if (changeDue > 0) {                                    //check if change is due
 
                     while (changeDue >= cashDrawer[i].value && cashDrawer[i].drawerAmt > 0) {
+                                                                        //dispense highest possible bill amount / if bill is in drawer
+                        cashDrawer[i].drawerAmt--;                      //deduct that bill from drawer
+                        changeDue = changeDue - cashDrawer[i].value;    //deduct from change due
 
-                        cashDrawer[i].drawerAmt--;
-                        changeDue = changeDue - cashDrawer[i].value;
-
-                        dispensed = dispensed + cashDrawer[i].value;
+                        dispensed = dispensed + cashDrawer[i].value;    //keep track of dispensed total
 
                         Console.WriteLine($"Dispensed  {cashDrawer[i].value:C}");
                     }
@@ -493,7 +493,7 @@ internal class Program {
                     }
                 }
             }
-            GreenText($"\nDispensed total: {dispensed:C}");
+            GreenText($"\nDispensed total: {dispensed:C}");             //notify dispensed total
             paymentComplete = true;
 
         }
@@ -504,7 +504,7 @@ internal class Program {
         decimal drawerTotal = 0.00m;
         decimal drawerAmt = 0.00m;
 
-        for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {
+        for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {    //find drawer total by multiplying each bill value and amount
 
             drawerAmt = cashDrawer[drawer].drawerAmt * cashDrawer[drawer].value;
             drawerTotal = drawerTotal + drawerAmt;
@@ -515,7 +515,7 @@ internal class Program {
 
     static Currency[] RefreshDrawer(Currency[] cashDrawer, int[] intake) {
 
-        for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {
+        for (int drawer = 0; drawer < cashDrawer.Length; drawer++) {    //add cash intake to drawer after purchase
             cashDrawer[drawer].drawerAmt = cashDrawer[drawer].drawerAmt + intake[drawer];
         }
         return cashDrawer;
@@ -526,25 +526,25 @@ internal class Program {
         int[] nums = new int[10];
         string transactionNo = "";
 
-        for (int i = 0; i < nums.Length; i++) {
+        for (int i = 0; i < nums.Length; i++) {                         //create transaction string of 10 random ints
             nums[i] = rand.Next(0, 10);
             transactionNo = transactionNo + nums[i];
         }
         return transactionNo;
     }
 
-    static string GetDate() {
+    static string GetDate() {                                           //format the date
         string dateString;
         string[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         DateTime dateTime = DateTime.Now;
-
+                                                                        
         string[] currentDate = { dateTime.Month.ToString(), dateTime.Day.ToString(), dateTime.Year.ToString() };
 
-        for (int month = 0; month < months.Length; month++) {
+        for (int month = 0; month < months.Length; month++) {           //figure month abbreviation
             if (dateTime.Month == month + 1) {
                 currentDate[0] = months[month];
             }
-        }
+        }                                                               //build formatted date string
         dateString = $"{currentDate[0]}-{currentDate[1]}-{currentDate[2]}";
         Console.WriteLine(dateString);
         return dateString;
@@ -553,7 +553,7 @@ internal class Program {
     static string GetTime() {
         string timeString;
         DateTime dateTime = DateTime.Now;
-
+                                                                        //build formatted time string
         string[] currentTime = { dateTime.Hour.ToString(), dateTime.Minute.ToString(), dateTime.Second.ToString() };
         timeString = $"{currentTime[0]}:{currentTime[1]}:{currentTime[2]}";
 
@@ -561,7 +561,7 @@ internal class Program {
     }
 
     static void LaunchLogger(string transactionNo, string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
-
+                                                                        //launch the separate logger program
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.FileName = @"C:\Users\MCA\source\repos\Evaluations\TransactionLogger\bin\Debug\net6.0\TransactionLogger.exe";
         startInfo.Arguments = transactionNo + " " + dateString + " " + timeString + " " + cashIntakeTotal.ToString() + " " + cardType + " " + cardAmount.ToString() + " " + dispensed.ToString() + " ";

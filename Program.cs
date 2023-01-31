@@ -335,24 +335,48 @@ internal class Program {
         double numSum = 0;
         double numProduct = 0;
         int aNum;
+        int sumNum1;
+        int sumNum2;
+        string sumStr;
         int[] card = new int[cardStr.Length];
+        bool mult2 = true;
         string productStr;
         bool isValidCard = false;
-        int finalNum;
+        int checkSum = 0;
+        decimal finalSum = 0;
+        decimal totalSum = 0;
+        decimal endNum = 0;
 
-        for (int i = 0; i < cardStr.Length; i++) {
+        checkSum = (int)char.GetNumericValue(cardStr[cardStr.Length - 1]);
+
+
+        for (int i = cardStr.Length - 2; i > -1; i--) {             //Luhn algorithm
             aNum = (int)char.GetNumericValue(cardStr[i]);
-            card[i] = aNum;
 
-            numSum = numSum + card[i];          //add each card number together
+            if (mult2) {                                            //starting at 2nd to last digit,mult that digit by 2
+                card[i] = aNum * 2;                                 
+                mult2 = false;
+            } else {
+                card[i] = aNum * 1;                                 //next digit by 1, then 2, then 1 etc
+                mult2 = true;
+            }
+            sumStr = card[i].ToString();                            //to string so we can add the 2 separate digits
+            sumNum1 = (int)char.GetNumericValue(sumStr[0]);
+
+            if (card[i] > 9) {                                      //if 2 digits
+                sumNum2 = (int)char.GetNumericValue(sumStr[1]);
+                finalSum = sumNum1 + sumNum2;
+            } else {
+                finalSum = sumNum1;
+            }
+            totalSum = totalSum + finalSum;
+        }
+        endNum = (10 - (totalSum % 10)) % 10;
+
+        if (endNum == checkSum) {
+            isValidCard = true;
         }
 
-        numProduct = numSum / 10;               //divide by 10
-        numProduct = numProduct + 0.1;          //add 0.1 to quotient
-        productStr = numProduct.ToString();
-
-        isValidCard = int.TryParse(productStr, out finalNum);
-                                                //check if whole num or fraction
         return isValidCard;
     }
 
@@ -398,11 +422,6 @@ internal class Program {
             return total;
         }
 
-       //if ((request) && (drawerTotal < amount)) {
-       //    PaymentError(total, validCard, cashDrawer);
-
-            //return total;
-        //}
         return amount;
     }
 

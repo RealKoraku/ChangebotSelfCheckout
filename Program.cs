@@ -368,6 +368,8 @@ internal class Program {
         string[] bankInfo;
         int[] intake = { 0 };
 
+        drawerTotal = CheckDrawer(cashDrawer);
+
         do {
             console = Input("\nWould you like cash-back? (y/n)");
         } while (console.ToLower() != "n" && console.ToLower() != "y");
@@ -378,13 +380,15 @@ internal class Program {
                 parser = int.TryParse(console, out amount);
 
                 request = true;
-            } while (parser == false);
+
+                if (drawerTotal < amount) {
+                    DarkRedText("Insufficient funds to complete this request. Please try again.");
+                }
+            } while ((parser == false) || (drawerTotal < amount));
 
         } else if (console.ToLower() == "n" && validCard) {
             return amount;
         }
-
-        drawerTotal = CheckDrawer(cashDrawer);
 
         if (validCard == false) {
 
@@ -394,11 +398,11 @@ internal class Program {
             return total;
         }
 
-        if ((request) && (drawerTotal < amount)) {
-            PaymentError(total, validCard, cashDrawer);
+       //if ((request) && (drawerTotal < amount)) {
+       //    PaymentError(total, validCard, cashDrawer);
 
-            return total;
-        }
+            //return total;
+        //}
         return amount;
     }
 
@@ -462,7 +466,7 @@ internal class Program {
         }
 
         if (changeDue > drawerTotal) {
-            DarkRedText("\nInsufficient dispensable funds to complete this transaction.\nPlease pay another way.");
+            DarkRedText("\nInsufficient dispensable funds to complete this transaction.");
             paymentComplete = false;
             return changeDue;
 
@@ -483,7 +487,7 @@ internal class Program {
                     }
 
                     if ((i == 0) && (cashDrawer[i].drawerAmt == 0) && (changeDue > 0)) {
-                        DarkRedText("\nInsufficient available funds to complete this purchase.\nPlease pay another way.");
+                        DarkRedText("\nInsufficient dispensable funds to complete this purchase.\n");
                         paymentComplete = false;
                         return changeDue;
                     }

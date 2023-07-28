@@ -580,9 +580,12 @@ internal class Program {
     }
 
     static void LaunchLogger(string transactionNo, string dateString, string timeString, decimal cashIntakeTotal, string cardType, decimal cardAmount, decimal dispensed) {
-                                                                        //launch the separate logger program
+
+        string workingDirectory = Environment.CurrentDirectory;
+        string path = workingDirectory + "\\TransactionLogger.exe";
+
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = @"C:\Users\MCA\source\repos\Evaluations\TransactionLogger\bin\Debug\net6.0\TransactionLogger.exe";
+        startInfo.FileName = path;
         startInfo.Arguments = transactionNo + " " + dateString + " " + timeString + " " + cashIntakeTotal.ToString() + " " + cardType + " " + cardAmount.ToString() + " " + dispensed.ToString() + " ";
         Process.Start(startInfo);
     }
